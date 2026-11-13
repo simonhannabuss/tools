@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { and, eq, gt } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { randomToken, sha256 } from "../crypto";
+import { BASE_PATH } from "../base-path";
 
 export const SESSION_COOKIE = "st_session";
 
@@ -22,7 +23,7 @@ async function setCookie(token: string, expires: Date) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    path: "/",
+    path: BASE_PATH || "/", // only sent to /tools, not the rest of the website
     expires,
   });
 }
@@ -70,10 +71,10 @@ export async function requireUser() {
 export async function signOut() {
   const s = await getSession();
   if (s) await db.delete(schema.sessions).where(eq(schema.sessions.id, s.session.id));
-  (await cookies()).delete(SESSION_COOKIE);
+  (await cookies()).delete({ name: SESSION_COOKIE, path: BASE_PATH || "/" });
 }
 
 export async function signOutEverywhere(userId: string) {
   await db.delete(schema.sessions).where(eq(schema.sessions.userId, userId));
-  (await cookies()).delete(SESSION_COOKIE);
+  (await cookies()).delete({ name: SESSION_COOKIE, path: BASE_PATH || "/" });
 }

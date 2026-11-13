@@ -1,5 +1,6 @@
 import { db, schema } from "@/db";
 import { adapters, platformOrder } from "@/platforms";
+import { withBase } from "@/lib/base-path";
 
 export default async function AccountsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const { connected, error } = await searchParams;
@@ -28,7 +29,7 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
             <span className={`pill ${a.mode}`}>{a.mode === "api" ? "API" : "Assisted"}</span>
             <span className={`pill ${status === "Connected" || status === "Ready" ? "ok" : status === "Expires soon" ? "warn" : ""}`}>{status}</span>
             {a.oauth ? (
-              <a className={`btn ${acc && !expiresSoon ? "secondary" : ""}`} href={`/oauth/${id}/start`}>
+              <a className={`btn ${acc && !expiresSoon ? "secondary" : ""}`} href={withBase(`/oauth/${id}/start`)}>
                 {acc ? "Reconnect" : "Connect"}
               </a>
             ) : a.mode === "api" ? (

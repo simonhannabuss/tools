@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { createPost } from "./actions";
+import { withBase } from "@/lib/base-path";
 
 export type PlatformOption = {
   id: string;
@@ -33,7 +34,7 @@ export function ComposeForm({ platforms }: { platforms: PlatformOption[] }) {
     setProgress(0);
     // XMLHttpRequest (not fetch) so we can show upload progress.
     const xhr = new XMLHttpRequest();
-    xhr.open("PUT", "/api/upload");
+    xhr.open("PUT", withBase("/api/upload"));
     xhr.setRequestHeader("content-type", file.type || "application/octet-stream");
     xhr.setRequestHeader("x-filename", encodeURIComponent(file.name));
     xhr.upload.onprogress = (e) => e.lengthComputable && setProgress(Math.round((e.loaded / e.total) * 100));

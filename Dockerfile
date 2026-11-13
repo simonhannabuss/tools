@@ -10,6 +10,9 @@ COPY package.json package-lock.json* ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 FROM base AS build
+# Sub-folder the app is served from (https://simonhannabuss.co.uk/tools)
+ARG BASE_PATH=/tools
+ENV BASE_PATH=$BASE_PATH
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build

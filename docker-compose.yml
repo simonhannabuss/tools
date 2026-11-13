@@ -1,8 +1,13 @@
+# Runs the app on the server. Your existing website (Apache or Nginx) forwards
+# https://simonhannabuss.co.uk/tools to the "web" container on 127.0.0.1:3000 —
+# see deploy/apache-tools.conf or deploy/nginx-tools.conf.
 services:
   web:
     build: .
     command: ["npm", "run", "start"]
     env_file: .env
+    ports:
+      - "127.0.0.1:3000:3000" # only reachable from the server itself, not the internet
     volumes:
       - media:/data/media
     depends_on: [postgres, redis]
@@ -34,21 +39,7 @@ services:
       - redisdata:/data
     restart: unless-stopped
 
-  caddy:
-    image: caddy:2
-    ports:
-      - "80:80"
-      - "443:443"
-    environment:
-      APP_DOMAIN: ${APP_DOMAIN}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddydata:/data
-    depends_on: [web]
-    restart: unless-stopped
-
 volumes:
   media:
   pgdata:
   redisdata:
-  caddydata:

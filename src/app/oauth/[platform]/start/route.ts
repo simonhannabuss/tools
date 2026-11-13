@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth/session";
 import { randomToken } from "@/lib/crypto";
+import { withBase } from "@/lib/base-path";
 import { env } from "@/lib/env";
 import { adapter, isPlatform } from "@/platforms";
 
@@ -20,7 +21,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ platfor
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    path: "/oauth/callback",
+    path: withBase("/oauth/callback"),
     maxAge: 600,
   });
   return Response.redirect(adapter(platform).oauth!.authorizeUrl(state, redirectUri(platform)));

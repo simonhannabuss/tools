@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth/session";
 import { safeEqual } from "@/lib/crypto";
+import { withBase } from "@/lib/base-path";
 import { env } from "@/lib/env";
 import { adapter, isPlatform, saveTokens } from "@/platforms";
 
@@ -19,7 +20,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ platform
   const url = new URL(req.url);
   const jar = await cookies();
   const expected = jar.get(`oauth_state_${platform}`)?.value;
-  jar.delete({ name: `oauth_state_${platform}`, path: "/oauth/callback" });
+  jar.delete({ name: `oauth_state_${platform}`, path: withBase("/oauth/callback") });
   const state = url.searchParams.get("state") ?? "";
   if (!expected || !safeEqual(state, expected)) return back("error=" + encodeURIComponent("Connection expired — try again."));
 

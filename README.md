@@ -39,45 +39,73 @@ src/
 scripts/               server commands: create user, reset password, set up 2FA
 ```
 
-**Where data lives:** code is in git. The database (Postgres), queue (Redis) and uploaded videos (`media` volume) live on the VPS. Secrets live only in `.env` on the server. Platform tokens and the 2FA secret are encrypted in the database with `ENCRYPTION_KEY`.
+**Where data lives:** code is in git. The database (Postgres), queue (Redis) and uploaded videos (`media` volume) live on the VPS, in Docker volumes, not in your website folder. Secrets live only in `.env` on the server. Platform tokens and the 2FA secret are encrypted in the database with `ENCRYPTION_KEY`.
 
 **Practical vs astrology:** each published post stores `practical_factors` and `astro_factors` in separate columns. The practical model learns from results. Astrology is only calculated, then tested against what the practical model *didn't* explain (`src/insights/astro-experiment.ts`).
 
-## Deploy on the VPS
+## Put it on the server (simonhannabuss.co.uk/tools)
 
-Needs Docker with the Compose plugin, and a domain pointing at the server (ports 80/443 open).
+The app runs on your EuroVPS server in Docker. Your existing website stays as it is, and its web server (Apache or Nginx) forwards `/tools` to the app.
+
+> Keep the code **outside** your website's public folder (not in `public_html`). Only the forwarding rule makes it visible at `/tools`. That way `.env` and the database can never be downloaded.
+
+### First time
+
+1. **Connect to the server** with SSH (Terminal on Mac): `ssh youruser@your-server-ip`
+2. **Check Docker is installed:** `docker compose version`. If it isn't, install Docker Engine for your server's OS (docs.docker.com/engine/install). You need root/sudo for this.
+3. **Download the code:**
+   ```bash
+   sudo mkdir -p /opt/tools && sudo chown $USER /opt/tools
+   git clone https://github.com/simonhannabuss/tools.git /opt/tools
+   cd /opt/tools
+   ```
+4. **Fill in the settings:**
+   ```bash
+   cp .env.example .env
+   openssl rand -base64 32   # copy into ENCRYPTION_KEY
+   openssl rand -base64 32   # copy into MEDIA_LINK_SECRET
+   nano .env                 # also set POSTGRES_PASSWORD (same password inside DATABASE_URL)
+   ```
+5. **Start it:**
+   ```bash
+   docker compose up -d --build
+   docker compose exec web npm run db:push          # creates the database tables
+   docker compose exec web npm run user:create      # your username + password
+   docker compose exec web npm run user:setup-2fa   # scan the QR code, save the backup codes
+   ```
+   Check it's running: `curl http://127.0.0.1:3000/tools/health` should say `"ok":true`.
+6. **Point /tools at it:** add the forwarding rule to your website's config:
+   - Apache, cPanel or Plesk: `deploy/apache-tools.conf`
+   - Nginx: `deploy/nginx-tools.conf`
+
+   Then reload the web server.
+7. Open **https://simonhannabuss.co.uk/tools** and sign in.
+
+### Updating after new code is pushed to GitHub
 
 ```bash
-git clone https://github.com/simonhannabuss/tools.git && cd tools
-cp .env.example .env
-# fill in APP_URL, APP_DOMAIN, POSTGRES_PASSWORD (and the same password in DATABASE_URL)
-# generate secrets:
-openssl rand -base64 32   # → ENCRYPTION_KEY
-openssl rand -base64 32   # → MEDIA_LINK_SECRET
-nano .env
-
+cd /opt/tools
+git pull
 docker compose up -d --build
-docker compose exec web npm run db:push          # create tables
-docker compose exec web npm run user:create      # your username + password
-docker compose exec web npm run user:setup-2fa   # scan QR, save backup codes
+docker compose exec web npm run db:push   # only needed if the database changed
 ```
 
-Then open `https://your-domain` and sign in.
+### Useful commands
 
-**Updating:** `git pull && docker compose up -d --build` (run `npm run db:push` again if the schema changed).
+- See what's happening: `docker compose logs -f web worker`
+- Restart: `docker compose restart`
+- Stop: `docker compose down` (your data is kept in Docker volumes)
 
 **Backups:** back up the database nightly, e.g. a cron job running
-`docker compose exec -T postgres pg_dump -U tools tools | gzip > /backups/tools-$(date +%F).sql.gz`, then copy it off the server.
+`cd /opt/tools && docker compose exec -T postgres pg_dump -U tools tools | gzip > /backups/tools-$(date +%F).sql.gz`, then copy it off the server.
 
-**fail2ban (recommended):** the app slows down repeated failed sign-ins itself. fail2ban on the host adds IP blocking at the firewall.
-
-**Tailscale (later):** uncomment the two lines in `Caddyfile` and the dashboard is only reachable from your own devices. The platform callbacks, media links and `/health` stay public.
+**Tailscale (later):** uncomment the marked lines in the Apache or Nginx snippet. The dashboard is then only reachable from your own devices, while the platform callbacks, media links and `/health` stay public.
 
 ## Connecting YouTube
 
 1. In [Google Cloud console](https://console.cloud.google.com/), create a project and enable **YouTube Data API v3**.
 2. Set up the OAuth consent screen (External, add yourself as a test user).
-3. Create an OAuth client ID (**Web application**) with redirect URI `https://your-domain/oauth/callback/youtube`.
+3. Create an OAuth client ID (**Web application**) with redirect URI `https://simonhannabuss.co.uk/tools/oauth/callback/youtube`.
 4. Put the ID and secret in `.env` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`), then run `docker compose up -d`.
 5. In the app: Connected accounts → YouTube → Connect.
 
@@ -89,7 +117,7 @@ Note: until Google verifies your app, videos uploaded through the API may be loc
 npm install
 cp .env.example .env    # point DATABASE_URL/REDIS_URL at local services
 npm run db:push
-npm run dev             # web on http://localhost:3000
+npm run dev             # web on http://localhost:3000/tools
 npm run worker:dev      # in a second terminal
 npm test                # model + planetary-hours tests
 ```

@@ -79,7 +79,7 @@ export default async function SecurityPage() {
           <div className="card">
             <h2>Network access <span className="pill">Later</span></h2>
             <p className="muted">
-              Only allow my devices (Tailscale): set in the Caddyfile on the server. These stay public because platforms need them:
+              Only allow my devices (Tailscale): set in the Apache or Nginx config on the server (see deploy/). These stay public because platforms need them:
             </p>
             <p className="muted">
               <code>/oauth/callback/*</code> — account connections
