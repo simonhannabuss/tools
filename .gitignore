@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# secrets — never commit
+.env
+.env.*
+!.env.example
+
+# local media and data
+media/
+data/
+
+.DS_Store
+npm-debug.log*

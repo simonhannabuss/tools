@@ -1,0 +1,49 @@
+{
+  "name": "simons-tools",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Personal social media publisher with insights (and room for more tools).",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "worker": "tsx src/worker/index.ts",
+    "worker:dev": "tsx watch src/worker/index.ts",
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "user:create": "tsx scripts/user-create.ts",
+    "user:reset-password": "tsx scripts/user-reset-password.ts",
+    "user:setup-2fa": "tsx scripts/user-setup-2fa.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@node-rs/argon2": "^2.0.2",
+    "bullmq": "^5.34.0",
+    "drizzle-orm": "^0.38.0",
+    "ioredis": "^5.4.1",
+    "next": "^15.1.0",
+    "otplib": "^12.0.1",
+    "pg": "^8.13.1",
+    "qrcode-terminal": "^0.12.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "server-only": "^0.0.1",
+    "tsx": "^4.19.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.11.10",
+    "@types/qrcode-terminal": "^0.12.2",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "drizzle-kit": "^0.30.0",
+    "typescript": "^5.7.2"
+  }
+}

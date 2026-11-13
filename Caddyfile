@@ -1,0 +1,32 @@
+{$APP_DOMAIN} {
+	encode gzip
+
+	# Large video uploads
+	request_body {
+		max_size 4GB
+	}
+
+	# --- Always public: platforms need to reach these ---
+	@public path /oauth/callback/* /media/s/* /health
+	handle @public {
+		reverse_proxy web:3000
+	}
+
+	# --- Everything else: the dashboard (login + 2FA still required) ---
+	handle {
+		# LATER (Tailscale): uncomment to only allow your own devices.
+		# Tailscale addresses are in 100.64.0.0/10.
+		# @notTailnet not remote_ip 100.64.0.0/10
+		# respond @notTailnet 404
+
+		reverse_proxy web:3000
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
