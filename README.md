@@ -52,7 +52,11 @@ The app runs on your EuroVPS server in Docker. Your existing website stays as it
 ### First time
 
 1. **Connect to the server** with SSH (Terminal on Mac): `ssh youruser@your-server-ip`
-2. **Check Docker is installed:** `docker compose version`. If it isn't, install Docker Engine for your server's OS (docs.docker.com/engine/install). You need root/sudo for this.
+2. **Check Docker is installed:** `docker compose version`. You need root for this.
+   - **cPanel on AlmaLinux:** the server already has Podman, which cPanel uses (`ea-podman`). Don't remove it. Add compose support instead:
+     `dnf -y install epel-release && dnf -y install podman-compose && systemctl enable --now podman-restart.service`.
+     After that, the `docker compose …` commands below work through Podman.
+   - **Other servers:** install Docker Engine (docs.docker.com/engine/install).
 3. **Download the code:**
    ```bash
    sudo mkdir -p /opt/tools && sudo chown $USER /opt/tools

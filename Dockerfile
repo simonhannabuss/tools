@@ -1,5 +1,5 @@
 # One image, two roles: the web app (`npm run start`) and the worker (`npm run worker`).
-FROM node:22-bookworm-slim AS base
+FROM docker.io/library/node:22-bookworm-slim AS base
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ffmpeg ca-certificates \
  && rm -rf /var/lib/apt/lists/*

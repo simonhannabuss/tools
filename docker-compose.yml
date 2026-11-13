@@ -11,7 +11,7 @@ services:
     volumes:
       - media:/data/media
     depends_on: [postgres, redis]
-    restart: unless-stopped
+    restart: always
 
   worker:
     build: .
@@ -20,24 +20,24 @@ services:
     volumes:
       - media:/data/media
     depends_on: [postgres, redis]
-    restart: unless-stopped
+    restart: always
 
   postgres:
-    image: postgres:16
+    image: docker.io/library/postgres:16
     environment:
       POSTGRES_USER: tools
       POSTGRES_DB: tools
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    restart: unless-stopped
+    restart: always
 
   redis:
-    image: redis:7
+    image: docker.io/library/redis:7
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redisdata:/data
-    restart: unless-stopped
+    restart: always
 
 volumes:
   media:
