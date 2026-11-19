@@ -16,4 +16,6 @@ export function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-export const config = { matcher: ["/((?!_next/static|_next/image).*)"] };
+// /api/upload is excluded: middleware buffers request bodies (10 MB cap by default), which cut
+// videos short. The upload route checks the session itself.
+export const config = { matcher: ["/((?!_next/static|_next/image|api/upload).*)"] };

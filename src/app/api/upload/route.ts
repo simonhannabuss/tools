@@ -1,6 +1,6 @@
 import { db, schema } from "@/db";
 import { getSession } from "@/lib/auth/session";
-import { isAllowedType, saveUpload } from "@/lib/media/storage";
+import { deleteMediaFile, isAllowedType, saveUpload } from "@/lib/media/storage";
 import { makeThumbnail, probeVideo } from "@/lib/media/probe";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +19,17 @@ export async function PUT(req: Request) {
 
   const originalName = decodeURIComponent(req.headers.get("x-filename") ?? "upload");
   const { relPath, sizeBytes } = await saveUpload(req.body, mime);
+
+  // Never accept a cut-off file: the browser tells us the real size up front.
+  const expected = Number(req.headers.get("x-file-size") ?? req.headers.get("content-length") ?? 0);
+  if (expected && sizeBytes !== expected) {
+    await deleteMediaFile(relPath);
+    console.error(`Upload incomplete: got ${sizeBytes} of ${expected} bytes`);
+    return Response.json(
+      { error: `Upload was incomplete (${Math.round(sizeBytes / 1e6)} of ${Math.round(expected / 1e6)} MB). Please try again.` },
+      { status: 400 },
+    );
+  }
 
   let probe = { durationSec: null as number | null, width: null as number | null, height: null as number | null };
   let thumbnailPath: string | null = null;

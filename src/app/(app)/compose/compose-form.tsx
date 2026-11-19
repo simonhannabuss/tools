@@ -37,6 +37,7 @@ export function ComposeForm({ platforms }: { platforms: PlatformOption[] }) {
     xhr.open("PUT", withBase("/api/upload"));
     xhr.setRequestHeader("content-type", file.type || "application/octet-stream");
     xhr.setRequestHeader("x-filename", encodeURIComponent(file.name));
+    xhr.setRequestHeader("x-file-size", String(file.size)); // server rejects the upload if it doesn't match
     xhr.upload.onprogress = (e) => e.lengthComputable && setProgress(Math.round((e.loaded / e.total) * 100));
     xhr.onload = () => {
       setProgress(null);

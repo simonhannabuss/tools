@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   experimental: {
     serverActions: { bodySizeLimit: "2mb" }, // videos go through /api/upload, not server actions
+    // Belt and braces: if a big upload ever does pass through middleware, don't truncate it at 10 MB.
+    middlewareClientMaxBodySize: "5gb",
   },
 };
 
