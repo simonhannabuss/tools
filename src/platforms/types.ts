@@ -65,6 +65,16 @@ export interface PlatformAdapter {
     refreshWindowMs?: number;
   };
 
+  /**
+   * For platforms where you paste a permanent key into .env instead of clicking Connect
+   * (Instagram with Meta's Unified login).
+   */
+  settingsToken?: {
+    token(): string | undefined;
+    accountId?(): string | undefined;
+    discover(token: string): Promise<{ remoteId: string; handle: string | null }>;
+  };
+
   validate(input: Pick<PublishInput, "kind" | "caption" | "title" | "media">): Issue[];
   publish(input: PublishInput): Promise<PublishResult>;
   fetchStats?(remoteId: string, accessToken: string): Promise<Stats>;

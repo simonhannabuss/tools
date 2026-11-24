@@ -50,12 +50,25 @@ export async function saveTokens(platform: Platform, t: TokenSet) {
 }
 
 export async function accountRemoteId(platform: Platform): Promise<string | null> {
+  const st = adapter(platform).settingsToken;
+  const fixed = st?.accountId?.();
+  if (fixed) return fixed;
   const [acc] = await db.select({ remoteId: schema.accounts.remoteId }).from(schema.accounts).where(eq(schema.accounts.platform, platform)).limit(1);
-  return acc?.remoteId ?? null;
+  if (acc?.remoteId) return acc.remoteId;
+  // Key from settings: look the account up once and remember it.
+  const token = st?.token();
+  if (st && token) {
+    const found = await st.discover(token);
+    await saveTokens(platform, { accessToken: token, remoteId: found.remoteId, handle: found.handle });
+    return found.remoteId;
+  }
+  return null;
 }
 
 /** Returns a valid access token, refreshing it if it expires within 5 minutes. Null if not connected. */
 export async function accessTokenFor(platform: Platform): Promise<string | null> {
+  const fromSettings = adapter(platform).settingsToken?.token();
+  if (fromSettings) return fromSettings;
   const [acc] = await db.select().from(schema.accounts).where(eq(schema.accounts.platform, platform)).limit(1);
   if (!acc?.accessTokenEnc) return null;
   const soon = Date.now() + (adapter(platform).oauth?.refreshWindowMs ?? 5 * 60 * 1000);

@@ -1,17 +1,18 @@
 import { env } from "@/lib/env";
-import type { Issue, PlatformAdapter, PublishInput, Stats, TokenSet } from "./types";
+import type { Issue, PlatformAdapter, PublishInput, Stats } from "./types";
 
 /**
- * Instagram API with Instagram Login (Business Login for Instagram).
- * No Facebook Page needed; the Instagram account must be Business or Creator.
+ * Instagram API with Unified Login (what Meta gives new apps since late October 2026).
+ * For your own account: generate a system-user access token in the Meta app dashboard
+ * (Use cases → Instagram API → API setup with Unified login → Generate access tokens) and put it in .env
+ * as INSTAGRAM_ACCESS_TOKEN. It doesn't expire. No Facebook Page needed; the Instagram account must be
+ * Business/Creator and in your business portfolio.
+ *
  * Reels are published by giving Instagram a public link to the video (our expiring /media/s/ link);
  * Instagram downloads it, processes it, and then we publish.
  */
-const AUTHORIZE_URL = "https://www.instagram.com/oauth/authorize";
-const TOKEN_URL = "https://api.instagram.com/oauth/access_token";
-const GRAPH = "https://graph.instagram.com";
+const GRAPH = "https://graph.facebook.com";
 const VERSION = () => process.env.INSTAGRAM_API_VERSION || "v26.0";
-const SCOPES = ["instagram_business_basic", "instagram_business_content_publish", "instagram_business_manage_insights"];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -22,19 +23,9 @@ async function graph<T>(path: string, init: { method?: "GET" | "POST"; params: R
   if (method === "GET") for (const [k, v] of Object.entries(init.params)) url.searchParams.set(k, v);
   else body = new URLSearchParams(init.params);
   const res = await fetch(url, { method, body });
-  const json = (await res.json().catch(() => ({}))) as T & { error?: { message?: string; code?: number } };
+  const json = (await res.json().catch(() => ({}))) as T & { error?: { message?: string } };
   if (!res.ok || json.error) throw new Error(`Instagram ${res.status}: ${json.error?.message ?? "request failed"}`);
   return json;
-}
-
-async function longLived(shortToken: string) {
-  const u = new URL(`${GRAPH}/access_token`);
-  u.searchParams.set("grant_type", "ig_exchange_token");
-  u.searchParams.set("client_secret", env.INSTAGRAM_APP_SECRET ?? "");
-  u.searchParams.set("access_token", shortToken);
-  const res = await fetch(u);
-  if (!res.ok) throw new Error(`Instagram long-lived token error ${res.status}: ${await res.text()}`);
-  return (await res.json()) as { access_token: string; expires_in: number };
 }
 
 export const instagram: PlatformAdapter = {
@@ -44,56 +35,27 @@ export const instagram: PlatformAdapter = {
   supports: { video: true, text: false },
   description: "Reels on your Business/Creator account · stats synced after publishing",
 
-  oauth: {
-    // Instagram tokens last 60 days and can only be refreshed while still valid, so refresh a week early.
-    refreshWindowMs: 7 * 24 * 60 * 60 * 1000,
-
-    authorizeUrl(state, redirectUri) {
-      const p = new URLSearchParams({
-        client_id: env.INSTAGRAM_APP_ID ?? "",
-        redirect_uri: redirectUri,
-        response_type: "code",
-        scope: SCOPES.join(","),
-        state,
+  settingsToken: {
+    token: () => env.INSTAGRAM_ACCESS_TOKEN || undefined,
+    accountId: () => env.INSTAGRAM_ACCOUNT_ID || undefined,
+    /** Finds the Instagram account the token was issued for. */
+    async discover(token) {
+      const fixedId = env.INSTAGRAM_ACCOUNT_ID;
+      if (fixedId) {
+        const me = await graph<{ username?: string }>(fixedId, { params: { fields: "username", access_token: token } });
+        return { remoteId: fixedId, handle: me.username ? `@${me.username}` : null };
+      }
+      const r = await graph<{ data?: { id: string; username?: string }[] }>("me/assigned_instagram_accounts", {
+        params: { fields: "id,username", access_token: token },
       });
-      return `${AUTHORIZE_URL}?${p}`;
-    },
-
-    async exchangeCode(code, redirectUri): Promise<TokenSet> {
-      const res = await fetch(TOKEN_URL, {
-        method: "POST",
-        body: new URLSearchParams({
-          client_id: env.INSTAGRAM_APP_ID ?? "",
-          client_secret: env.INSTAGRAM_APP_SECRET ?? "",
-          grant_type: "authorization_code",
-          redirect_uri: redirectUri,
-          code: code.replace(/#_$/, ""),
-        }),
-      });
-      if (!res.ok) throw new Error(`Instagram token error ${res.status}: ${await res.text()}`);
-      const short = (await res.json()) as { access_token: string; user_id?: number | string; permissions?: string[] | string };
-      const long = await longLived(short.access_token);
-      const me = await graph<{ user_id?: string; id?: string; username?: string }>("me", {
-        params: { fields: "user_id,username", access_token: long.access_token },
-      });
-      return {
-        accessToken: long.access_token,
-        refreshToken: long.access_token, // Instagram refreshes the long-lived token itself
-        expiresAt: new Date(Date.now() + long.expires_in * 1000),
-        scopes: Array.isArray(short.permissions) ? short.permissions.join(",") : (short.permissions ?? SCOPES.join(",")),
-        handle: me.username ? `@${me.username}` : null,
-        remoteId: me.user_id ?? me.id ?? String(short.user_id ?? ""),
-      };
-    },
-
-    async refresh(currentToken) {
-      const u = new URL(`${GRAPH}/refresh_access_token`);
-      u.searchParams.set("grant_type", "ig_refresh_token");
-      u.searchParams.set("access_token", currentToken);
-      const res = await fetch(u);
-      if (!res.ok) throw new Error(`Instagram refresh error ${res.status}: ${await res.text()}`);
-      const t = (await res.json()) as { access_token: string; expires_in: number };
-      return { accessToken: t.access_token, refreshToken: t.access_token, expiresAt: new Date(Date.now() + t.expires_in * 1000) };
+      const acc = r.data?.[0];
+      if (!acc?.id) throw new Error("No Instagram account found for this token — set INSTAGRAM_ACCOUNT_ID in .env.");
+      let handle = acc.username ? `@${acc.username}` : null;
+      if (!handle) {
+        const me = await graph<{ username?: string }>(acc.id, { params: { fields: "username", access_token: token } }).catch(() => ({}) as { username?: string });
+        handle = me.username ? `@${me.username}` : null;
+      }
+      return { remoteId: acc.id, handle };
     },
   },
 
@@ -110,7 +72,8 @@ export const instagram: PlatformAdapter = {
   },
 
   async publish(input: PublishInput) {
-    if (!input.accessToken || !input.accountRemoteId) throw new Error("Instagram isn't connected — reconnect it.");
+    if (!input.accessToken || !input.accountRemoteId)
+      throw new Error("Instagram isn't set up — add INSTAGRAM_ACCESS_TOKEN to .env.");
     const igId = input.accountRemoteId;
     const tags = input.tags.filter((t) => !input.caption.includes(t)).join(" ");
     const caption = tags ? `${input.caption}\n\n${tags}` : input.caption;
