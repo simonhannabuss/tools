@@ -3,7 +3,8 @@ import { db, schema } from "@/db";
 import type { Platform } from "@/db/schema";
 import { decryptOrNull, encrypt, encryptOrNull } from "@/lib/crypto";
 import { youtube } from "./youtube";
-import { bitchute, facebook, instagram, linkedin, rumble, substack, tiktok } from "./others";
+import { bitchute, facebook, instagram, rumble, substack, tiktok } from "./others";
+import { linkedin } from "./linkedin";
 import type { PlatformAdapter, TokenSet } from "./types";
 
 export const adapters: Record<Platform, PlatformAdapter> = {
@@ -45,6 +46,11 @@ export async function saveTokens(platform: Platform, t: TokenSet) {
       target: schema.accounts.platform,
       set: { ...values, refreshTokenEnc: values.refreshTokenEnc ?? undefined, handle: values.handle ?? undefined },
     });
+}
+
+export async function accountRemoteId(platform: Platform): Promise<string | null> {
+  const [acc] = await db.select({ remoteId: schema.accounts.remoteId }).from(schema.accounts).where(eq(schema.accounts.platform, platform)).limit(1);
+  return acc?.remoteId ?? null;
 }
 
 /** Returns a valid access token, refreshing it if it expires within 5 minutes. Null if not connected. */

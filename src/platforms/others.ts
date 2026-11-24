@@ -58,24 +58,6 @@ export const facebook: PlatformAdapter = {
   },
 };
 
-export const linkedin: PlatformAdapter = {
-  id: "linkedin",
-  name: "LinkedIn",
-  mode: "api",
-  supports: { video: false, text: true },
-  description: "Text, image & document posts",
-  validate({ kind, caption }) {
-    const issues: Issue[] = [];
-    if (kind !== "text") issues.push({ level: "error", message: "LinkedIn is set up for text posts." });
-    if (caption.length > 3000) issues.push({ level: "error", message: "LinkedIn posts are limited to 3,000 characters." });
-    return issues;
-  },
-  async publish() {
-    // Plan: "Share on LinkedIn" product, w_member_social scope, POST /rest/posts as the member.
-    throw new NotImplementedYet("LinkedIn", "needs LinkedIn developer app");
-  },
-};
-
 // ---------------------------------------------------------------- Assisted platforms (no posting API)
 
 function assisted(id: "rumble" | "bitchute" | "substack", name: string, handoffUrl: string, description: string, kinds: { video: boolean; text: boolean }): PlatformAdapter {

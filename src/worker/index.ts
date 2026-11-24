@@ -11,7 +11,7 @@ import { QUEUE, enqueueMetricCheckpoints, redis, scheduleMaintenance, type Check
 import { absolutePath, deleteMediaFile } from "@/lib/media/storage";
 import { aspectOf } from "@/lib/media/probe";
 import { createMediaLink } from "@/lib/media/signed-links";
-import { accessTokenFor, adapter } from "@/platforms";
+import { accessTokenFor, accountRemoteId, adapter } from "@/platforms";
 import { NotImplementedYet } from "@/platforms/types";
 import { computeAstroFactors } from "@/astrology";
 import { localParts, slotOf } from "@/insights/time";
@@ -77,6 +77,7 @@ async function publish(job: Job<{ targetId: string }>) {
         }
       : null,
     accessToken: a.mode === "api" ? await accessTokenFor(target.platform) : null,
+    accountRemoteId: a.mode === "api" ? await accountRemoteId(target.platform) : null,
     publicMediaUrl: () => (media ? createMediaLink(media.id) : ""),
   };
 

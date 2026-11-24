@@ -27,6 +27,7 @@ export type PublishInput = {
   options: Record<string, unknown>;
   media: MediaInfo | null;
   accessToken: string | null; // null for assisted platforms
+  accountRemoteId: string | null; // your ID on the platform (e.g. LinkedIn member ID)
   /** A short-lived public URL for platforms that download the file themselves (Instagram, TikTok). */
   publicMediaUrl: () => string;
 };
