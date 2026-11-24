@@ -27,20 +27,6 @@ export const tiktok: PlatformAdapter = {
   },
 };
 
-export const instagram: PlatformAdapter = {
-  id: "instagram",
-  name: "Instagram",
-  mode: "api",
-  supports: { video: true, text: false },
-  description: "Business/Creator account · Reels & carousels",
-  validate: needVideo("Instagram", 15 * 60),
-  async publish() {
-    // Plan: Instagram Graph API — create a REELS media container with video_url = input.publicMediaUrl(),
-    // poll status_code until FINISHED, then media_publish.
-    throw new NotImplementedYet("Instagram", "needs Meta app review first");
-  },
-};
-
 export const facebook: PlatformAdapter = {
   id: "facebook",
   name: "Facebook",

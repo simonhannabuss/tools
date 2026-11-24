@@ -168,6 +168,14 @@ async function nightly() {
     if (m.thumbnailPath) await deleteMediaFile(m.thumbnailPath);
     await db.update(schema.media).set({ deletedAt: new Date() }).where(eq(schema.media.id, m.id));
   }
+  // Keep connections alive (Instagram tokens must be refreshed before they expire)
+  for (const acc of await db.select().from(schema.accounts)) {
+    try {
+      await accessTokenFor(acc.platform);
+    } catch (err) {
+      log("token refresh failed", acc.platform, err instanceof Error ? err.message : err);
+    }
+  }
   // Pending-2FA and expired sessions
   await db.delete(schema.sessions).where(lt(schema.sessions.expiresAt, new Date()));
   log("nightly: deleted", expired.length, "expired media files");

@@ -61,6 +61,8 @@ export interface PlatformAdapter {
     authorizeUrl(state: string, redirectUri: string): string;
     exchangeCode(code: string, redirectUri: string): Promise<TokenSet>;
     refresh?(refreshToken: string): Promise<TokenSet>;
+    /** Refresh this long before expiry (default 5 minutes). */
+    refreshWindowMs?: number;
   };
 
   validate(input: Pick<PublishInput, "kind" | "caption" | "title" | "media">): Issue[];
