@@ -16,6 +16,8 @@ const schema = z.object({
   TIKTOK_CLIENT_SECRET: z.string().optional(),
   INSTAGRAM_ACCESS_TOKEN: z.string().optional(),
   INSTAGRAM_ACCOUNT_ID: z.string().optional(),
+  FACEBOOK_PAGE_TOKEN: z.string().optional(),
+  FACEBOOK_PAGE_ID: z.string().optional(),
   META_APP_ID: z.string().optional(),
   META_APP_SECRET: z.string().optional(),
   LINKEDIN_CLIENT_ID: z.string().optional(),

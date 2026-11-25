@@ -115,6 +115,24 @@ docker compose exec web npm run db:push   # only needed if the database changed
 
 Note: until Google verifies your app, videos uploaded through the API may be locked to private, and the daily upload quota is limited. For a personal tool you can request an audit or quota increase in the console.
 
+## Connecting Facebook (your Page)
+
+Facebook only lets apps post to **Pages**, not personal profiles. The app uses a Page access token that doesn't expire.
+
+1. In the Meta app (developers.facebook.com → Simon's Tools), click **Add use cases** and add **Manage everything on your Page**.
+2. Open the **Graph API Explorer** (developers.facebook.com/tools/explorer). Choose **Meta App: Simon's Tools**, then **Get User Access Token**, and tick `pages_show_list`, `pages_read_engagement`, `pages_manage_posts` and `read_insights`. Click **Generate Access Token**, log in, and choose your Page.
+3. Click the **ⓘ** next to the token → **Open in Access Token Tool** → **Extend Access Token**. Copy the long-lived token.
+4. Back in the Explorer, paste the long-lived token into the token box, then run `GET me/accounts?fields=name,id,access_token`.
+5. Copy your Page's `access_token` and `id`. Check the token in the **Access Token Debugger**: it should say **Expires: Never**.
+6. Add both to `.env`:
+   ```
+   FACEBOOK_PAGE_TOKEN=...
+   FACEBOOK_PAGE_ID=...
+   ```
+   Then run `docker compose down && docker compose up -d`.
+
+The token stops working if you change your Facebook password, stop being an admin of the Page, or remove the app. If that happens, repeat steps 2–6.
+
 ## Local development
 
 ```bash

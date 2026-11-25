@@ -27,23 +27,6 @@ export const tiktok: PlatformAdapter = {
   },
 };
 
-export const facebook: PlatformAdapter = {
-  id: "facebook",
-  name: "Facebook",
-  mode: "api",
-  supports: { video: true, text: true },
-  description: "Page Reels & posts",
-  validate({ kind, media }) {
-    if (kind === "video" && media?.durationSec && media.durationSec > 90)
-      return [{ level: "warning", message: "Over 90s: posts as a regular video, not a Reel." }];
-    return [];
-  },
-  async publish() {
-    // Plan: Page access token; Reels via /{page-id}/video_reels (start → upload → finish), text via /{page-id}/feed.
-    throw new NotImplementedYet("Facebook", "needs Meta app setup");
-  },
-};
-
 // ---------------------------------------------------------------- Assisted platforms (no posting API)
 
 function assisted(id: "rumble" | "bitchute" | "substack", name: string, handoffUrl: string, description: string, kinds: { video: boolean; text: boolean }): PlatformAdapter {
