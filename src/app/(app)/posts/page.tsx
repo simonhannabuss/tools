@@ -1,7 +1,20 @@
-import { desc, inArray } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { db, schema } from "@/db";
 import { adapter } from "@/platforms";
 import { env } from "@/lib/env";
+import { requireUser } from "@/lib/auth/session";
+import { enqueuePublish } from "@/lib/queue";
+
+/** Try a failed post again (e.g. after reconnecting the platform). The uploaded video is reused. */
+async function retry(formData: FormData) {
+  "use server";
+  await requireUser();
+  const id = String(formData.get("targetId"));
+  await db.update(schema.postTargets).set({ status: "scheduled", error: null, attempts: 0 }).where(eq(schema.postTargets.id, id));
+  await enqueuePublish(id, null);
+  revalidatePath("/posts");
+}
 
 const fmt = (d: Date | null) =>
   d
@@ -79,6 +92,12 @@ export default async function PostsPage() {
                         <span className={`pill ${t.status}`}>{STATUS[t.status]}</span>
                         {t.remoteUrl && <a href={t.remoteUrl} target="_blank" rel="noreferrer">View</a>}
                         {t.status === "failed" && t.error && <span className="muted">{t.error}</span>}
+                        {(t.status === "failed" || (t.status === "needs_user" && adapter(t.platform).mode === "api")) && (
+                          <form action={retry}>
+                            <input type="hidden" name="targetId" value={t.id} />
+                            <button className="btn secondary" style={{ padding: "4px 10px", fontSize: 12 }}>Retry</button>
+                          </form>
+                        )}
                       </div>
                     ))}
                 </td>
