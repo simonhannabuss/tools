@@ -53,8 +53,24 @@ export async function saveTokens(platform: Platform, t: TokenSet) {
 export async function accountRemoteId(platform: Platform): Promise<string | null> {
   const st = adapter(platform).settingsToken;
   const fixed = st?.accountId?.();
-  if (fixed) return fixed;
-  const [acc] = await db.select({ remoteId: schema.accounts.remoteId }).from(schema.accounts).where(eq(schema.accounts.platform, platform)).limit(1);
+  const [acc] = await db
+    .select({ remoteId: schema.accounts.remoteId, handle: schema.accounts.handle })
+    .from(schema.accounts)
+    .where(eq(schema.accounts.platform, platform))
+    .limit(1);
+  if (fixed) {
+    // ID is set in .env — still look up the account name once, for the Connected accounts page.
+    const token = st?.token();
+    if (st && token && (!acc || !acc.handle)) {
+      try {
+        const found = await st.discover(token);
+        await saveTokens(platform, { accessToken: token, remoteId: fixed, handle: found.handle });
+      } catch {
+        // Name lookup is cosmetic; posting uses the fixed ID.
+      }
+    }
+    return fixed;
+  }
   if (acc?.remoteId) return acc.remoteId;
   // Key from settings: look the account up once and remember it.
   const token = st?.token();
