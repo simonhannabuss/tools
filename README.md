@@ -85,14 +85,16 @@ The app runs on your EuroVPS server in Docker. Your existing website stays as it
    Then reload the web server.
 7. Open **https://simonhannabuss.co.uk/tools** and sign in.
 
-### Updating after new code is pushed to GitHub
+### Everyday commands (copy one line)
 
-```bash
-cd /opt/tools
-git pull
-docker compose up -d --build
-docker compose exec web npm run db:push   # only needed if the database changed
-```
+| To… | Run |
+|---|---|
+| Update to the latest code | `/opt/tools/update.sh` |
+| Restart after editing settings (`.env`) | `/opt/tools/restart.sh` |
+| Edit settings | `nano /opt/tools/.env` |
+| See what's wrong | `cd /opt/tools && docker compose logs --tail 40 web` |
+
+If the database structure changed (I'll say so), also run `cd /opt/tools && docker compose exec web npm run db:push`.
 
 ### Useful commands
 
