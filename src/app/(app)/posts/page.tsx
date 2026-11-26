@@ -92,7 +92,9 @@ export default async function PostsPage() {
                         <span className={`pill ${t.status}`}>{STATUS[t.status]}</span>
                         {t.remoteUrl && <a href={t.remoteUrl} target="_blank" rel="noreferrer">View</a>}
                         {t.status === "failed" && t.error && <span className="muted">{t.error}</span>}
-                        {(t.status === "failed" || (t.status === "needs_user" && adapter(t.platform).mode === "api")) && (
+                        {(t.status === "failed" ||
+                          (t.status === "needs_user" && adapter(t.platform).mode === "api") ||
+                          (t.status === "publishing" && Date.now() - (p.scheduledFor ?? p.createdAt).getTime() > 20 * 60 * 1000)) && (
                           <form action={retry}>
                             <input type="hidden" name="targetId" value={t.id} />
                             <button className="btn secondary" style={{ padding: "4px 10px", fontSize: 12 }}>Retry</button>

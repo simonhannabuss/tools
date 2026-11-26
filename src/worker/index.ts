@@ -59,6 +59,19 @@ async function publish(job: Job<{ targetId: string }>) {
     .set({ status: "publishing", attempts: target.attempts + 1, practicalFactors: practical, astroFactors: astro, error: null })
     .where(eq(schema.postTargets.id, target.id));
 
+  // Getting the platform key can fail (e.g. expired connection): mark the post Failed rather than leaving it "Publishing".
+  let accessToken: string | null = null;
+  let accountId: string | null = null;
+  if (a.mode === "api") {
+    try {
+      accessToken = await accessTokenFor(target.platform);
+      accountId = await accountRemoteId(target.platform);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return fail(target.id, `${a.name} connection problem — reconnect it in Connected accounts, then Retry. (${msg.slice(0, 200)})`);
+    }
+  }
+
   const input = {
     kind: post.kind,
     title: post.title,
@@ -76,8 +89,8 @@ async function publish(job: Job<{ targetId: string }>) {
           height: media.height,
         }
       : null,
-    accessToken: a.mode === "api" ? await accessTokenFor(target.platform) : null,
-    accountRemoteId: a.mode === "api" ? await accountRemoteId(target.platform) : null,
+    accessToken,
+    accountRemoteId: accountId,
     publicMediaUrl: () => (media ? createMediaLink(media.id) : ""),
   };
 
