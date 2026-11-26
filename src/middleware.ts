@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // Paths reachable without signing in. Everything else needs a session cookie here,
 // and a fully verified (password + 2FA) session in requireUser() on the server.
-const PUBLIC = ["/login", "/oauth/callback/", "/media/s/", "/health", "/_next/", "/favicon"];
+const PUBLIC = ["/login", "/privacy", "/oauth/callback/", "/media/s/", "/health", "/_next/", "/favicon"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
